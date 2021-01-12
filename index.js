@@ -285,12 +285,13 @@ function afterAuthHandler( input ) {
                                     stderr: stderr.toString(),
                                     stdout: stdout.toString()
                                 });
+                            } else {
+                                sendToWSServer({
+                                    class: "updateReply",
+                                    stderr: stderr.toString(),
+                                    stdout: stdout.toString()
+                                });
                             }
-                            sendToWSServer({
-                                class: "updateReply",
-                                stderr: stderr.toString(),
-                                stdout: stdout.toString()
-                            });
                         } );
                     } else {
                         log('update check failed connection.readyState: ', connection.readyState, 'connection.OPEN: ', connection.OPEN);
