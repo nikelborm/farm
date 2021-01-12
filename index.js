@@ -15,13 +15,12 @@
     // stopBits: 1,
     // xoff:true // flowControl: false
 // }
-try {
-    var result = require("child_process").execSync( "git pull", { cwd: "/home/ubuntu/farm" } ).toString();
-    console.log( "git pull: ", result );
-} catch( err ) {
-    console.log( "err.output.toString(): ", err.output.toString() );
-    console.log( "err.stderr.toString(): ", err.stderr.toString() );
-    console.log( "err.stdout.toString(): ", err.stdout.toString() );
+function log( ...args ) {
+    if( args.length ) {
+        console.log( Date() + " - ", ...args );
+    } else {
+        console.log();
+    }
 }
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
@@ -43,6 +42,7 @@ const {
 } = require("./config");
 
 let isPortSendedReady = false;
+// @ts-ignore
 let processesStates = Object.fromEntries(
     getConfig().processes.map(
         proc => [ proc.long, false ]
@@ -63,31 +63,28 @@ const repeaterList = [];
 port.pipe( readyParser );
 
 function sendCmdToFarmForSetProcState( proc ) {
-    console.log( "sendCmdToFarmForSetProcState send to port:", ( processesStates[ proc.long ] ? "e" : "d" ) + proc.short );
-    console.log("proc: ", proc);
-    if (!proc?.long) console.log("proc: ", proc);
+    log( "sendCmdToFarmForSetProcState send to port:", ( processesStates[ proc.long ] ? "e" : "d" ) + proc.short );
     port.write( ( processesStates[ proc.long ] ? "e" : "d" ) + proc.short );
-    console.log( "sendCmdToFarmForSetProcState finished" );
-    console.log();
+    log( "sendCmdToFarmForSetProcState finished" );
+    log();
 }
 
 function requestSensorValue( sensor ) {
-    console.log( "requestSensorValue: ", "g" + sensor.short );
-    console.log('sensor: ', sensor);
+    log( "requestSensorValue: ", "g" + sensor.short );
     port.write( "g" + sensor.short );
-    console.log( "requestSensorValue finished" );
-    console.log();
+    log( "requestSensorValue finished" );
+    log();
 }
 
 function sendToWSServer( data ) {
-    console.log( "sendToWSServer: ", data );
+    log( "sendToWSServer: ", data );
     if ( connection.readyState === connection.OPEN ) connection.send( JSON.stringify( data ) );
-    else console.log( "connection.readyState: ", connection.readyState );
-    console.log( "sendToWSServer finished" );
+    else log( "connection.readyState: ", connection.readyState );
+    log( "sendToWSServer finished" );
 }
 
 function serialLineHandler( line ) {
-    console.log( "serialLineHandler got: ", line );
+    log( "serialLineHandler got: ", line );
     const { sensor, value } = JSON.parse( line );
     // Пока ферма присылает нам только показания с датчиков
     // Но возможно потом ещё что-то добавим
@@ -100,87 +97,87 @@ function serialLineHandler( line ) {
             value
         } );
     }
-    console.log( "serialLineHandler finished" );
+    log( "serialLineHandler finished" );
 }
 
 function protectCallback( unsafeCallback ) {
-    console.log("protectCallback started");
+    log("protectCallback started");
     return function() {
-        console.log("protectCallback function started");
-        console.log( "call: ", unsafeCallback.name, ", when: ", Date() );
-        console.log('isPortSendedReady: ', isPortSendedReady);
-        console.log('port.isOpen: ', port.isOpen);
-        console.log('arguments: ', [...arguments]);
+        log("protectCallback function started");
+        log( "call: ", unsafeCallback.name, ", when: ", Date() );
+        log("isPortSendedReady: ", isPortSendedReady);
+        log("port.isOpen: ", port.isOpen);
+        log("arguments: ", [...arguments]);
         if( port.isOpen && isPortSendedReady ) unsafeCallback( ...arguments );
-        else console.log( "was unsuccesful, because port closed or not send ready yet" );
-        console.log("protectCallback function finished");
-        console.log();
+        else log( "was unsuccesful, because port closed or not send ready yet" );
+        log("protectCallback function finished");
+        log();
     };
 }
 
 async function portSafeRepeater( unsafeCB, milliseconds, ...args ) {
-    console.log("portSafeRepeater started ");
-    console.log('args: ', args);
-    console.log('milliseconds: ', milliseconds);
-    console.log('unsafeCB: ', unsafeCB);
-    console.log('unsafeCB.name: ', unsafeCB.name);
+    log("portSafeRepeater started ");
+    log("args: ", args);
+    log("milliseconds: ", milliseconds);
+    log("unsafeCB: ", unsafeCB);
+    log("unsafeCB.name: ", unsafeCB.name);
     const safeCallback = () => protectCallback( unsafeCB )( ...args );
-    console.log('safeCallback: ', safeCallback);
+    log("safeCallback: ", safeCallback);
     try {
         await( new Promise( function ( resolve, reject ) {
-            console.log('Promise initialized portSafeRepeater on', unsafeCB.name);
+            log("Promise initialized portSafeRepeater on", unsafeCB.name);
             const timer = setTimeout( () => {
-                console.log('rejected portSafeRepeater on', unsafeCB.name);
+                log("rejected portSafeRepeater on", unsafeCB.name);
                 reject();
             }, 60000 );
-            console.log("TimeOut setted");
+            log("TimeOut setted");
             const interval = setInterval( () => {
-                console.log('setInterval portSafeRepeater on', unsafeCB.name);
+                log("setInterval portSafeRepeater on", unsafeCB.name);
                 if ( isPortSendedReady ) {
-                    console.log('resolved portSafeRepeater on', unsafeCB.name);
+                    log("resolved portSafeRepeater on", unsafeCB.name);
                     clearTimeout( timer );
                     clearInterval( interval );
-                    console.log('cleared Interval portSafeRepeater on', unsafeCB.name);
+                    log("cleared Interval portSafeRepeater on", unsafeCB.name);
                     resolve();
                 }
             }, 3000 );
-            console.log('Promise finished portSafeRepeater on', unsafeCB.name);
+            log("Promise finished portSafeRepeater on", unsafeCB.name);
         } ) );
-        console.log("Promise competed");
+        log("Promise competed");
         safeCallback();
-        console.log("callback executed");
+        log("callback executed");
         repeaterList.push(
             setInterval(
                 safeCallback,
                 milliseconds
             )
         );
-        console.log("try ended");
+        log("try ended");
     } catch ( error ) {
-        console.log( "error: ", error );
+        log( "error: ", error );
         shutdown();
-        console.log("catch ended");
+        log("catch ended");
     }
-    console.log("try catch ended");
+    log("try catch ended");
 }
 
 function updateProcessState( proc ) {
-    console.log('updateProcessState started ');
+    log("updateProcessState started ");
     sendCmdToFarmForSetProcState( proc );
     if( processesStates[ proc.long ] === shouldProcessBeActive( proc ) ) return;
-    console.log('shouldProcessBeActive( proc ): ', shouldProcessBeActive( proc ));
-    console.log('processesStates[ proc.long ]: ', processesStates[ proc.long ]);
+    log("shouldProcessBeActive( proc ): ", shouldProcessBeActive( proc ));
+    log("processesStates[ proc.long ]: ", processesStates[ proc.long ]);
     processesStates[ proc.long ] = shouldProcessBeActive( proc );
     sendToWSServer( {
         class: "event",
         process: proc.long,
         isActive: processesStates[ proc.long ]
     } );
-    console.log('updateProcessState finished ');
+    log("updateProcessState finished ");
 }
 
 function onSuccessAuth() {
-    console.log('onSuccessAuth started ');
+    log("onSuccessAuth started ");
     processesStates = createProcessesStatesPackage( getConfig().processes );
     sendToWSServer( {
         class: "activitySyncPackage",
@@ -200,21 +197,21 @@ function onSuccessAuth() {
     }
     connection.removeListener( "message", waitForAuthHandler );
     connection.addListener( "message", afterAuthHandler );
-    console.log('onSuccessAuth finished ');
+    log("onSuccessAuth finished ");
 }
 
 function waitForAuthHandler( input ) {
-    console.log( "waitForAuthHandler started" );
+    log( "waitForAuthHandler started" );
     const data = prepare( input );
-    console.log('data: ', data);
+    log("data: ", data);
     if( data.class !== "loginAsFarm" || data.report.isError ) return;
-    console.log("if not returned");
+    log("if not returned");
     onSuccessAuth();
-    console.log( "waitForAuthHandler finished" );
+    log( "waitForAuthHandler finished" );
 }
 
 function afterAuthHandler( input ) {
-    console.log( "afterAuthHandler started" );
+    log( "afterAuthHandler started" );
     const data = prepare( input );
     switch ( data.class ) {
         case "set":
@@ -224,7 +221,17 @@ function afterAuthHandler( input ) {
                         for ( const proc of prevConfig.processes ) {
                             if ( proc.long === data.process ) {
                                 proc.timings = data.timings;
-                                // TODO: updateLocalFarmConfigFile();
+                                break;
+                            }
+                        }
+                        return prevConfig;
+                    } );
+                    break;
+                case "criticalBorders":
+                    setConfig( prevConfig => {
+                        for ( const sensor of prevConfig.sensors ) {
+                            if ( sensor.long === data.sensor ) {
+                                sensor.criticalBorders = data.criticalBorders;
                                 break;
                             }
                         }
@@ -233,7 +240,6 @@ function afterAuthHandler( input ) {
                     break;
                 case "config":
                     setConfig( () => data.config );
-                    // TODO: updateLocalFarmConfigFile();
                     break;
             }
             break;
@@ -266,11 +272,20 @@ function afterAuthHandler( input ) {
         default:
             break;
     }
-    console.log( "afterAuthHandler finished" );
+    log( "afterAuthHandler finished" );
 }
 
 connection.addListener( "open", () => {
-    console.log( "Connection opened " );
+    log( "Connection opened " );
+    try {
+        var result = require("child_process").execSync( "git pull", { cwd: "/home/ubuntu/farm" } ).toString();
+        log( "git pull: ", result );
+    } catch( err ) {
+        log( "err.output.toString(): ", err.output.toString() );
+        log( "err.stderr.toString(): ", err.stderr.toString() );
+        log( "err.stdout.toString(): ", err.stdout.toString() );
+    }
+    log(" start work after updating ")
     sendToWSServer( {
         class: "loginAsFarm",
         secret,
@@ -279,11 +294,11 @@ connection.addListener( "open", () => {
 } );
 
 port.addListener( "open", () => {
-    console.log( "Port opened" );
+    log( "Port opened" );
 } );
 
 readyParser.addListener( "ready", () => {
-    console.log("readyParser got: ready ");
+    log("readyParser got: ready ");
     port.pipe( readlineParser );
     isPortSendedReady = true;
     port.unpipe( readyParser );
@@ -294,21 +309,21 @@ readlineParser.addListener( "data", serialLineHandler );
 connection.addListener( "message", waitForAuthHandler );
 
 connection.addListener( "error", wsError => {
-    console.log( "WebSocket error: " );
+    log( "WebSocket error: " );
     port.close( portError => {
-        if ( portError ) console.log( portError );
+        if ( portError ) log( portError );
         throw wsError;
     });
 } );
 
 port.addListener( "error", error => {
-    console.log( "Error on port: " );
-    console.log("shutdown date:", new Date());
+    log( "Error on port: " );
+    log("shutdown date:", new Date());
     throw error;
 } );
 
 connection.addListener( "close", ( code, msg ) => {
-    console.log( "WebSocket closed: ", code, msg );
+    log( "WebSocket closed: ", code, msg );
     port.close( portError => {
         if ( portError ) throw portError;
         process.exit( ~~(msg !== "shutdown farm") );
@@ -316,15 +331,15 @@ connection.addListener( "close", ( code, msg ) => {
 } );
 
 port.addListener( "close", () => {
-    console.log( "Port closed" );
+    log( "Port closed" );
     connection.close( 1000, "Port closed");
 } );
 
 function shutdown() {
-    console.log("Exiting...\n\nClosing Serial port...");
+    log("Exiting...\n\nClosing Serial port...");
     port.close(err => {
         if (err) throw err;
-        console.log("Serial port closed.\n\nClosing Websocket connection...");
+        log("Serial port closed.\n\nClosing Websocket connection...");
         connection.close( 1000, "shutdown farm");
         repeaterList.forEach( v => clearInterval( v ) );
     });
