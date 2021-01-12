@@ -26,15 +26,12 @@ function initializeUpdatechecker() {
     repeaterList.push( setInterval( () => {
         if(connection.readyState === connection.OPEN) {
             log('update check started ');
-            try {
-                var result = require("child_process").exec( "git pull", { cwd: "/home/ubuntu/farm" } ).toString();
-                log( "git pull: ", result );
-            } catch( err ) {
-                log( "err.output.toString(): ", err.output.toString() );
-                log( "err.stderr.toString(): ", err.stderr.toString() );
-                log( "err.stdout.toString(): ", err.stdout.toString() );
-            }
-            log('update check finished ');
+            var result = require("child_process").exec( "git pull", { cwd: "/home/ubuntu/farm" }, (error, stderr,stdout) => {
+                log( "err: ", error );
+                log( "err.stderr.toString(): ", stderr.toString() );
+                log( "err.stdout.toString(): ", stdout.toString() );
+                log('update check finished ');
+            } );
         } else {
             log('update check failed connection.readyState: ', connection.readyState, 'connection.OPEN: ', connection.OPEN);
         }
