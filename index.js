@@ -22,6 +22,25 @@ function log( ...args ) {
         console.log();
     }
 }
+function initializeUpdatechecker() {
+    repeaterList.push( setInterval( () => {
+        if(connection.readyState === connection.OPEN) {
+            log('update check started ');
+            try {
+                var result = require("child_process").exec( "git pull", { cwd: "/home/ubuntu/farm" } ).toString();
+                log( "git pull: ", result );
+            } catch( err ) {
+                log( "err.output.toString(): ", err.output.toString() );
+                log( "err.stderr.toString(): ", err.stderr.toString() );
+                log( "err.stdout.toString(): ", err.stdout.toString() );
+            }
+            log('update check finished ');
+        } else {
+            log('update check failed connection.readyState: ', connection.readyState, 'connection.OPEN: ', connection.OPEN);
+        }
+    }, 20000));
+}
+
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
 const Ready = require("@serialport/parser-ready");
@@ -277,15 +296,7 @@ function afterAuthHandler( input ) {
 
 connection.addListener( "open", () => {
     log( "Connection opened " );
-    try {
-        var result = require("child_process").execSync( "git pull", { cwd: "/home/ubuntu/farm" } ).toString();
-        log( "git pull: ", result );
-    } catch( err ) {
-        log( "err.output.toString(): ", err.output.toString() );
-        log( "err.stderr.toString(): ", err.stderr.toString() );
-        log( "err.stdout.toString(): ", err.stdout.toString() );
-    }
-    log(" start work after updating ")
+    initializeUpdatechecker();
     sendToWSServer( {
         class: "loginAsFarm",
         secret,
