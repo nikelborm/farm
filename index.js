@@ -279,12 +279,12 @@ function afterAuthHandler( input ) {
                             log( "err.stdout.toString(): ", stdout.toString() );
                             log('update check finished ');
                             if (error){
-                            sendToWSServer({
-                            	                                class: "updateReply",
-                            	                                error: error.message,
-                            	                                stderr: stderr.toString(),
-                            	                                stdout: stdout.toString()
-      	                            });	
+                                sendToWSServer({
+                                    class: "updateReply",
+                                    error: error.message,
+                                    stderr: stderr.toString(),
+                                    stdout: stdout.toString()
+                                });
                             }
                             sendToWSServer({
                                 class: "updateReply",
