@@ -24,17 +24,7 @@ function log( ...args ) {
 }
 function initializeUpdatechecker() {
     repeaterList.push( setInterval( () => {
-        if(connection.readyState === connection.OPEN) {
-            log('update check started ');
-            var result = require("child_process").exec( "git pull", { cwd: "/home/ubuntu/farm" }, (error, stderr,stdout) => {
-                log( "err: ", error );
-                log( "err.stderr.toString(): ", stderr.toString() );
-                log( "err.stdout.toString(): ", stdout.toString() );
-                log('update check finished ');
-            } );
-        } else {
-            log('update check failed connection.readyState: ', connection.readyState, 'connection.OPEN: ', connection.OPEN);
-        }
+        
     }, 20000));
 }
 
@@ -279,6 +269,25 @@ function afterAuthHandler( input ) {
             switch ( data.what ) {
                 case "shutDownFarm":
                     // TODO: shutDownFarm();
+                    break;
+                case "update":
+                    if(connection.readyState === connection.OPEN) {
+                        log('update check started ');
+                        var result = require("child_process").exec( "git pull", { cwd: "/home/ubuntu/farm" }, (error, stderr,stdout) => {
+                            log( "err: ", error );
+                            log( "err.stderr.toString(): ", stderr.toString() );
+                            log( "err.stdout.toString(): ", stdout.toString() );
+                            log('update check finished ');
+                            sendToWSServer({
+                                class: "updateReply",
+                                error: error.message,
+                                stderr: stderr.toString(),
+                                stdout: stdout.toString()
+                            });
+                        } );
+                    } else {
+                        log('update check failed connection.readyState: ', connection.readyState, 'connection.OPEN: ', connection.OPEN);
+                    }
                     break;
                 case "updateArduino":
                     // TODO: updateArduino();
