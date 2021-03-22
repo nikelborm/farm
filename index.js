@@ -272,12 +272,12 @@ function afterAuthHandler( input ) {
                     break;
                 case "update":
                     if(connection.readyState === connection.OPEN) {
-                        log('update check started ');
+                        log("update check started ");
                         var result = require("child_process").exec( "git pull", { cwd: "/home/ubuntu/farm" }, (error, stderr,stdout) => {
                             log( "err: ", error );
                             log( "err.stderr.toString(): ", stderr.toString() );
                             log( "err.stdout.toString(): ", stdout.toString() );
-                            log('update check finished ');
+                            log("update check finished ");
                             if (error){
                                 sendToWSServer({
                                     class: "updateReply",
@@ -294,7 +294,7 @@ function afterAuthHandler( input ) {
                             }
                         } );
                     } else {
-                        log('update check failed connection.readyState: ', connection.readyState, 'connection.OPEN: ', connection.OPEN);
+                        log("update check failed connection.readyState: ", connection.readyState, "connection.OPEN: ", connection.OPEN);
                     }
                     break;
                 case "updateArduino":
